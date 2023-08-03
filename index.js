@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -26,11 +26,35 @@ async function run() {
     
     const TaskData= client.db('TaskData').collection('Task');
 
+    //adding Task through post method
     app.post('/Task', async(req,res)=>{
         const task= req.body;
         console.log(task);
         const result = await TaskData.insertOne(task);
         res.send(result);
+    })
+
+    //showing added task by email
+
+    app.get('/Task', async(req, res)=>{
+      let data= {};
+
+      if(req.query?.email){
+        data= {email: req.query.email}
+      }
+      const result = await TaskData.find(data).toArray();
+
+      res.send(result);
+    })
+
+    //delete by id
+
+    app.delete('Task/:id', async(req, res)=>{
+      const Task_id= req.params.id;
+      const query={_id: new ObjectId(Task_id)}
+
+      const result= await TaskData.deleteOne(query);
+      res.send(result);
     })
 
     await client.db("admin").command({ ping: 1 });
