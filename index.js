@@ -25,7 +25,19 @@ async function run() {
     await client.connect();
     
     const TaskData= client.db('TaskData').collection('Task');
+    const userData = client.db("TaskData").collection("users");
 
+    //sociallogin
+    app.post('/users', async (req, res) => {
+      const user = req.body;
+      const query = { email: user.email }
+      const existingUser = await userData.findOne(query);
+      if (existingUser) {
+        return res.send({ message: 'user already exists' })
+      }
+      const result = await userData.insertOne(user);
+      res.send(result);
+    })
     //adding Task through post method
     app.post('/Task', async(req,res)=>{
         const task= req.body;
@@ -33,7 +45,7 @@ async function run() {
         const result = await TaskData.insertOne(task);
         res.send(result);
     })
-
+   
     //showing added task by email
 
     app.get('/Task', async(req, res)=>{
@@ -47,13 +59,55 @@ async function run() {
       res.send(result);
     })
 
+    //showing added task by id
+    app.get('/Task/:id', async(req,res)=>{
+      const id= req.params.id;
+      const query={_id: new ObjectId(id)}
+      const result = await TaskData.findOne(query);
+      res.send(result);
+    })
     //delete by id
-
-    app.delete('Task/:id', async(req, res)=>{
-      const Task_id= req.params.id;
-      const query={_id: new ObjectId(Task_id)}
+    app.delete('/Task/:id', async(req, res)=>{
+      const id= req.params.id;
+      const query={_id: new ObjectId(id)}
 
       const result= await TaskData.deleteOne(query);
+      res.send(result);
+    })
+
+    //update status
+    app.patch('/Task/:id', async(req, res)=>{
+      const id= req.params.id;
+      const filter ={_id: new ObjectId(id)};
+      const TaskUpdateing = req.body;
+
+      const updateDoc={
+        $set:{
+          status: TaskUpdateing.status
+        },
+      };
+
+      const result= await TaskData.updateOne(filter, updateDoc);
+      res.send(result);
+    })
+
+    // update task
+
+    app.put('/update/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) }
+      const options = { upsert: true };
+      const updatedTask=req.body;
+      const task= {
+        $set: {
+          TaskName: updatedTask.TaskName,
+          email: updatedTask.email,
+          Date: updatedTask.Date,
+          Time: updatedTask.Time,
+          Description: updatedTask.Description,
+        }
+      }
+      const result =await TaskData.updateOne(filter,task);
       res.send(result);
     })
 
